@@ -1,0 +1,280 @@
+<?xml version="1.0"?>
+<!DOCTYPE wflow [
+
+<!ENTITY task_common_vars
+"
+  <envar><name>HOMErrfs</name><value>/mnt/lfs5/BMC/wrfruc/gge/rrfs2</value></envar>
+  <envar><name>EXPDIR</name><value>/lfs5/BMC/wrfruc/gge/nco/exp/1.0.1/ens_conus12km</value></envar>
+  <envar><name>CDATE</name><value><cyclestr>@Y@m@d@H</cyclestr></value></envar>
+  <envar><name>PDY</name><value><cyclestr>@Y@m@d</cyclestr></value></envar>
+  <envar><name>cyc</name><value><cyclestr>@H</cyclestr></value></envar>
+"
+>
+]>
+
+<workflow realtime="F" scheduler="slurm" cyclethrottle="5" taskthrottle="100">
+  <log verbosity="10"><cyclestr>/lfs5/BMC/wrfruc/gge/nco/com/conus12km/1.0.1/logs/rrfs.@Y@m@d/@H/rrfs_c1v01.log</cyclestr></log>
+
+  <cycledef group="ens_ic">202405270300 202405280000 12:00:00</cycledef>
+  <cycledef group="ens_lbc">202405270000 202405280000 06:00:00</cycledef>
+  <cycledef group="ens_prod">202405270300 202405280000 01:00:00</cycledef>
+
+<metatask name="ens_ungrib_ic">
+<var name="ens_index">001 002</var>
+<var name="gmem">01 02</var>
+<task name="ungrib_ic_m#ens_index#" cycledefs="ens_ic" maxtries="3">
+  <command>/mnt/lfs5/BMC/wrfruc/gge/rrfs2/jobs/rocoto/launch.sh JRRFS_UNGRIB</command>
+  <join><cyclestr>/lfs5/BMC/wrfruc/gge/nco/com/conus12km/1.0.1/logs/ens.@Y@m@d/@H/ungrib_ic_m#ens_index#_c1v01_@Y@m@d@H.log</cyclestr></join>
+
+  <jobname><cyclestr>c1v01_ungrib_ic_m#ens_index#_c@H</cyclestr></jobname>
+  <account>rtwrfruc</account>
+  <queue>rth</queue>
+  <partition>kjet</partition>
+  <walltime>00:30:00</walltime>
+  <nodes>1:ppn=1</nodes>
+  <native>--reservation=rrfsens</native>
+  &task_common_vars;
+  <envar><name>FHR</name><value>000</value></envar>
+  <envar><name>TYPE</name><value>IC</value></envar>
+  <envar><name>ENS_INDEX</name><value>#ens_index#</value></envar>
+
+  <dependency>
+  <and>
+  <datadep age="00:05:00"><cyclestr offset="-39:00:00">/lfs5/BMC/nrtrr/FIX_RRFS2/staged_data/ops/GEFS/gefs.@Y@m@d/@H/pgrb2ap5/gep#gmem#.t@Hz.pgrb2a.0p50.f039</cyclestr></datadep>
+  <datadep age="00:05:00"><cyclestr offset="-39:00:00">/lfs5/BMC/nrtrr/FIX_RRFS2/staged_data/ops/GEFS/gefs.@Y@m@d/@H/pgrb2bp5/gep#gmem#.t@Hz.pgrb2b.0p50.f039</cyclestr></datadep>
+  </and>
+  </dependency>
+</task>
+</metatask>
+
+<metatask name="ens_ungrib_lbc">
+<var name="ens_index">001 002</var>
+<var name="gmem">01 02</var>
+<metatask name="ungrib_lbc_m#ens_index#">
+<var name="fhr">000 003 006 009 012</var>
+<var name="fhr_in">036 039 042 045 048</var>
+<task name="ungrib_lbc_m#ens_index#_f#fhr#" cycledefs="ens_lbc" maxtries="3">
+  <command>/mnt/lfs5/BMC/wrfruc/gge/rrfs2/jobs/rocoto/launch.sh JRRFS_UNGRIB</command>
+  <join><cyclestr>/lfs5/BMC/wrfruc/gge/nco/com/conus12km/1.0.1/logs/ens.@Y@m@d/@H/ungrib_lbc_m#ens_index#_f#fhr#_c1v01_@Y@m@d@H.log</cyclestr></join>
+
+  <jobname><cyclestr>c1v01_ungrib_lbc_m#ens_index#_f#fhr#_c@H</cyclestr></jobname>
+  <account>rtwrfruc</account>
+  <queue>rth</queue>
+  <partition>kjet</partition>
+  <walltime>00:30:00</walltime>
+  <nodes>1:ppn=1</nodes>
+  <native>--reservation=rrfsens</native>
+  &task_common_vars;
+  <envar><name>FHR</name><value>#fhr#</value></envar>
+  <envar><name>TYPE</name><value>LBC</value></envar>
+  <envar><name>ENS_INDEX</name><value>#ens_index#</value></envar>
+
+  <dependency>
+  <and>
+  <datadep age="00:05:00"><cyclestr offset="-36:00:00">/lfs5/BMC/nrtrr/FIX_RRFS2/staged_data/ops/GEFS/gefs.@Y@m@d/@H/pgrb2ap5/gep#gmem#.t@Hz.pgrb2a.0p50.f#fhr_in#</cyclestr></datadep>
+  <datadep age="00:05:00"><cyclestr offset="-36:00:00">/lfs5/BMC/nrtrr/FIX_RRFS2/staged_data/ops/GEFS/gefs.@Y@m@d/@H/pgrb2bp5/gep#gmem#.t@Hz.pgrb2b.0p50.f#fhr_in#</cyclestr></datadep>
+  </and>
+  </dependency>
+</task>
+</metatask>
+</metatask>
+
+<metatask name="ens_ic">
+<var name="ens_index">001 002</var>
+<task name="ic_m#ens_index#" cycledefs="ens_ic,ens_lbc" maxtries="3">
+  <command>/mnt/lfs5/BMC/wrfruc/gge/rrfs2/jobs/rocoto/launch.sh JRRFS_IC</command>
+  <join><cyclestr>/lfs5/BMC/wrfruc/gge/nco/com/conus12km/1.0.1/logs/ens.@Y@m@d/@H/ic_m#ens_index#_c1v01_@Y@m@d@H.log</cyclestr></join>
+
+  <jobname><cyclestr>c1v01_ic_m#ens_index#_c@H</cyclestr></jobname>
+  <account>rtwrfruc</account>
+  <queue>rth</queue>
+  <partition>kjet</partition>
+  <walltime>00:30:00</walltime>
+  <nodes>1:ppn=40</nodes>
+  <native>--reservation=rrfsens</native>
+  &task_common_vars;
+  <envar><name>ENS_INDEX</name><value>#ens_index#</value></envar>
+
+  <dependency>
+  <and>
+  <or>
+    <taskdep task="ungrib_ic_m#ens_index#"/>
+    <taskdep task="ungrib_lbc_m#ens_index#_f000"/>
+  </or>
+  </and>
+  </dependency>
+</task>
+</metatask>
+
+<metatask name="ens_lbc">
+<var name="ens_index">001 002</var>
+<metatask name="lbc_m#ens_index#">
+<var name="fhr">000 003 006 009 012</var>
+<task name="lbc_m#ens_index#_f#fhr#" cycledefs="ens_lbc" maxtries="3">
+  <command>/mnt/lfs5/BMC/wrfruc/gge/rrfs2/jobs/rocoto/launch.sh JRRFS_LBC</command>
+  <join><cyclestr>/lfs5/BMC/wrfruc/gge/nco/com/conus12km/1.0.1/logs/ens.@Y@m@d/@H/lbc_m#ens_index#_f#fhr#_c1v01_@Y@m@d@H.log</cyclestr></join>
+
+  <jobname><cyclestr>c1v01_lbc_m#ens_index#_f#fhr#_c@H</cyclestr></jobname>
+  <account>rtwrfruc</account>
+  <queue>rth</queue>
+  <partition>kjet</partition>
+  <walltime>00:30:00</walltime>
+  <nodes>1:ppn=40</nodes>
+  <native>--reservation=rrfsens</native>
+  &task_common_vars;
+  <envar><name>FHR</name><value>#fhr#</value></envar>
+  <envar><name>ENS_INDEX</name><value>#ens_index#</value></envar>
+
+  <dependency>
+  <and>
+  <taskdep task="ungrib_lbc_m#ens_index#_f#fhr#"/>
+  <taskdep task="ic_m#ens_index#"/>
+  </and>
+  </dependency>
+</task>
+</metatask>
+</metatask>
+
+<task name="ens_da" cycledefs="ens_prod" maxtries="3">
+  <command>/mnt/lfs5/BMC/wrfruc/gge/rrfs2/jobs/rocoto/launch.sh JRRFS_ENS_DA</command>
+  <join><cyclestr>/lfs5/BMC/wrfruc/gge/nco/com/conus12km/1.0.1/logs/ens.@Y@m@d/@H/ens_da_c1v01_@Y@m@d@H.log</cyclestr></join>
+
+  <jobname><cyclestr>c1v01_ens_da_c@H</cyclestr></jobname>
+  <account>rtwrfruc</account>
+  <queue>rth</queue>
+  <partition>kjet</partition>
+  <walltime>00:30:00</walltime>
+  <nodes>1:ppn=1</nodes>
+  <native>--reservation=rrfsens</native>
+  &task_common_vars;
+
+  <dependency>
+  <and>
+    <or>
+      <and>
+        <or>
+          <streq><left><cyclestr>@H</cyclestr></left><right>03</right></streq>
+          <streq><left><cyclestr>@H</cyclestr></left><right>15</right></streq>
+        </or>
+        <metataskdep metatask="ens_ic"/>
+      </and>
+      <and>
+        <or>
+          <strneq><left><cyclestr>@H</cyclestr></left><right>03</right></strneq>
+          <strneq><left><cyclestr>@H</cyclestr></left><right>15</right></strneq>
+        </or>
+        <datadep age="00:05:00"><cyclestr offset="-1:00:00">/lfs5/BMC/wrfruc/gge/nco/stmp/conus12km/1.0.1/ens.@Y@m@d/@H/mem001/fcst/</cyclestr><cyclestr>restart.@Y-@m-@d_@H.@M.@S.nc</cyclestr></datadep>
+        <datadep age="00:05:00"><cyclestr offset="-1:00:00">/lfs5/BMC/wrfruc/gge/nco/stmp/conus12km/1.0.1/ens.@Y@m@d/@H/mem002/fcst/</cyclestr><cyclestr>restart.@Y-@m-@d_@H.@M.@S.nc</cyclestr></datadep>
+      </and>
+    </or>
+  </and>
+  </dependency>
+</task>
+
+<metatask name="ens_fcst">
+<var name="ens_index">001 002</var>
+<task name="fcst_m#ens_index#" cycledefs="ens_prod" maxtries="3">
+  <command>/mnt/lfs5/BMC/wrfruc/gge/rrfs2/jobs/rocoto/launch.sh JRRFS_FCST</command>
+  <join><cyclestr>/lfs5/BMC/wrfruc/gge/nco/com/conus12km/1.0.1/logs/ens.@Y@m@d/@H/fcst_m#ens_index#_c1v01_@Y@m@d@H.log</cyclestr></join>
+
+  <jobname><cyclestr>c1v01_fcst_m#ens_index#_c@H</cyclestr></jobname>
+  <account>rtwrfruc</account>
+  <queue>rth</queue>
+  <partition>kjet</partition>
+  <walltime>00:50:00</walltime>
+  <nodes>3:ppn=40</nodes>
+  <native>--reservation=rrfsens</native>
+  &task_common_vars;
+  <envar><name>ENS_INDEX</name><value>#ens_index#</value></envar>
+
+  <dependency>
+  <and>
+   <or>
+    <metataskdep metatask="lbc_m#ens_index#" cycle_offset="0:00:00"/>
+    <metataskdep metatask="lbc_m#ens_index#" cycle_offset="-1:00:00"/>
+    <metataskdep metatask="lbc_m#ens_index#" cycle_offset="-2:00:00"/>
+    <metataskdep metatask="lbc_m#ens_index#" cycle_offset="-3:00:00"/>
+    <metataskdep metatask="lbc_m#ens_index#" cycle_offset="-4:00:00"/>
+    <metataskdep metatask="lbc_m#ens_index#" cycle_offset="-5:00:00"/>
+    <metataskdep metatask="lbc_m#ens_index#" cycle_offset="-6:00:00"/>
+   </or>
+   <or>
+    <and>
+      <or>
+        <streq><left><cyclestr>@H</cyclestr></left><right>03</right></streq>
+        <streq><left><cyclestr>@H</cyclestr></left><right>15</right></streq>
+      </or>
+      <taskdep task="ic_m#ens_index#"/>
+    </and>
+    <and>
+      <and>
+        <strneq><left><cyclestr>@H</cyclestr></left><right>03</right></strneq>
+        <strneq><left><cyclestr>@H</cyclestr></left><right>15</right></strneq>
+      </and>
+      <taskdep task="ens_da"/>
+    </and>
+   </or>
+  </and>
+  </dependency>
+</task>
+</metatask>
+
+<metatask name="ens_mpassit">
+<var name="ens_index">001 002</var>
+<metatask name="mpassit_m#ens_index#">
+<var name="fhr">001 002 003 004 005 006</var>
+<var name="fhr2">01 02 03 04 05 06</var>
+<task name="mpassit_m#ens_index#_f#fhr#" cycledefs="ens_prod" maxtries="3">
+  <command>/mnt/lfs5/BMC/wrfruc/gge/rrfs2/jobs/rocoto/launch.sh JRRFS_MPASSIT</command>
+  <join><cyclestr>/lfs5/BMC/wrfruc/gge/nco/com/conus12km/1.0.1/logs/ens.@Y@m@d/@H/mpassit_m#ens_index#_f#fhr#_c1v01_@Y@m@d@H.log</cyclestr></join>
+
+  <jobname><cyclestr>c1v01_mpassit_m#ens_index#_f#fhr#_c@H</cyclestr></jobname>
+  <account>rtwrfruc</account>
+  <queue>rth</queue>
+  <partition>kjet</partition>
+  <walltime>00:50:00</walltime>
+  <nodes>2:ppn=40</nodes>
+  <native>--reservation=rrfsens</native>
+  &task_common_vars;
+  <envar><name>FHR</name><value>#fhr#</value></envar>
+  <envar><name>ENS_INDEX</name><value>#ens_index#</value></envar>
+
+  <dependency>
+  <and>
+  <datadep age="00:05:00"><cyclestr>/lfs5/BMC/wrfruc/gge/nco/stmp/conus12km/1.0.1/ens.@Y@m@d/@H_m#ens_index#/fcst/</cyclestr><cyclestr offset="#fhr2#:00:00">diag.@Y-@m-@d_@H.@M.@S.nc</cyclestr></datadep>
+  <datadep age="00:05:00"><cyclestr>/lfs5/BMC/wrfruc/gge/nco/stmp/conus12km/1.0.1/ens.@Y@m@d/@H_m#ens_index#/fcst/</cyclestr><cyclestr offset="#fhr2#:00:00">history.@Y-@m-@d_@H.@M.@S.nc</cyclestr></datadep>
+  </and>
+  </dependency>
+</task>
+</metatask>
+</metatask>
+
+<metatask name="ens_upp">
+<var name="ens_index">001 002</var>
+<metatask name="upp_m#ens_index#">
+<var name="fhr">001 002 003 004 005 006</var>
+<task name="upp_m#ens_index#_f#fhr#" cycledefs="ens_prod" maxtries="3">
+  <command>/mnt/lfs5/BMC/wrfruc/gge/rrfs2/jobs/rocoto/launch.sh JRRFS_UPP</command>
+  <join><cyclestr>/lfs5/BMC/wrfruc/gge/nco/com/conus12km/1.0.1/logs/ens.@Y@m@d/@H/upp_m#ens_index#_f#fhr#_c1v01_@Y@m@d@H.log</cyclestr></join>
+
+  <jobname><cyclestr>c1v01_upp_m#ens_index#_f#fhr#_c@H</cyclestr></jobname>
+  <account>rtwrfruc</account>
+  <queue>rth</queue>
+  <partition>kjet</partition>
+  <walltime>00:50:00</walltime>
+  <nodes>2:ppn=40</nodes>
+  <native>--exclusive --reservation=rrfsens</native>
+  &task_common_vars;
+  <envar><name>FHR</name><value>#fhr#</value></envar>
+  <envar><name>ENS_INDEX</name><value>#ens_index#</value></envar>
+
+  <dependency>
+  <and>
+  <taskdep task="mpassit_m#ens_index#_f#fhr#"/>
+  </and>
+  </dependency>
+</task>
+</metatask>
+</metatask>
+
+</workflow>
